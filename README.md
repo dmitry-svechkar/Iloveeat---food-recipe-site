@@ -1,6 +1,12 @@
 # Сайт для размещения информации о рецептах разных кухон мира.
 Доступен по адресу https://recipesite-foodgram.zapto.org/recipes
-
+Доступ для админки:
+```
+https://recipesite-foodgram.zapto.org/admin
+```
+```
+login reviewer Пароль: Qwerty0527!
+```
 ![image](https://github.com/dmitry-svechkar/foodgram-project-react/assets/138603861/fec36985-98c7-46b1-b508-c44ea5098411)
 
 ### Стек технологий
