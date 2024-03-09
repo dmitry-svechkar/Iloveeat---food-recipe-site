@@ -42,7 +42,7 @@ def generate_list_of_cart_ingredients(request):
             'measurement_unit': values['measurement_unit']
         }
         for name, values in res.items()
-        ]
+    ]
     return cart_ingredients
 
 
