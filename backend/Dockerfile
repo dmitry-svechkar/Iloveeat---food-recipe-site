@@ -10,8 +10,10 @@ RUN pip install -r requirements.txt --no-cache-dir
 
 RUN pip install --upgrade pip
 
-# cp -r /app/static/. /backend_static/
-
 COPY . .
+
+RUN python manage.py migrate
+
+RUN python manage.py collectstatic
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "foodgram_backend.wsgi"] 
