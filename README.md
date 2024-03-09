@@ -5,9 +5,15 @@
 ```
 https://recipesite-foodgram.zapto.org/admin
 ```
+Ник-Нейм
 ```
-login reviewer Пароль: Qwerty0527!
+reviewer
 ```
+Пароль:
+```
+Qwerty0527!
+```
+
 ![image](https://github.com/dmitry-svechkar/foodgram-project-react/assets/138603861/fec36985-98c7-46b1-b508-c44ea5098411)
 
 ### Стек технологий
