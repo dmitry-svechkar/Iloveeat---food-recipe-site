@@ -8,7 +8,7 @@ from recipes.constants import LEN_CONSTANTS as LC
 class User(AbstractUser):
     username = CharField(
         'Ник-нейм',
-        validators=[RegexValidator('^[\w.@+-]+\Z')],
+        validators=[RegexValidator('^[w.@+-]+Z')],
         max_length=LC['name'],
         unique=True
     )

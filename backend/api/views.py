@@ -70,7 +70,9 @@ class UserViewSet(UserViewSet):
             return StandardPagination()
 
     @action(
-        methods=['get'], detail=False, permission_classes=[IsAuthenticated,]
+        methods=['get'],
+        detail=False,
+        permission_classes=[IsAuthenticated, ]
     )
     def subscriptions(self, request):
         """ Функция для получения списка отслеживаемых авторов."""
@@ -93,7 +95,7 @@ class UserViewSet(UserViewSet):
     @action(
         methods=['post', 'delete'],
         detail=True,
-        permission_classes=[IsAuthenticated,]
+        permission_classes=[IsAuthenticated, ]
     )
     def subscribe(self, request, id=None):
         """ Функция для добавления пользователей  в список отслеживаемых."""
@@ -157,7 +159,7 @@ class TagModelViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = None
-    http_method_names = ['get',]
+    http_method_names = ['get', ]
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -166,7 +168,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientListSerializer
     pagination_class = None
     filterset_class = IngredientFilter
-    http_method_names = ['get',]
+    http_method_names = ['get', ]
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -183,7 +185,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     ]
     pagination_class = StandardPagination
     http_method_names = ['get', 'post', 'patch', 'delete']
-    filter_backends = [DjangoFilterBackend,]
+    filter_backends = [DjangoFilterBackend, ]
     filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
@@ -211,7 +213,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated,],
+        permission_classes=[IsAuthenticated, ],
         detail=True
     )
     def favorite(self, request, pk=None):
@@ -261,7 +263,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated,],
+        permission_classes=[IsAuthenticated, ],
         detail=True
     )
     def shopping_cart(self, request, pk=None):

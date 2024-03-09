@@ -107,7 +107,9 @@ class Ingredient(Model):
 
     class Meta:
         ordering = ('id',)
-        indexes = [Index(fields=['id']),]
+        indexes = [
+            Index(fields=['id'])
+        ]
         verbose_name = 'ингридиенты'
         verbose_name_plural = 'ингридиенты'
 
