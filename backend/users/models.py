@@ -1,14 +1,15 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db.models import (CASCADE, BooleanField, CharField, DateTimeField,
-                              EmailField, ForeignKey, ManyToManyField, Model)
+                              EmailField, ForeignKey, ManyToManyField, Model,
+                              UniqueConstraint)
 from recipes.constants import LEN_CONSTANTS as LC
 
 
 class User(AbstractUser):
     username = CharField(
         'Ник-нейм',
-        validators=[RegexValidator('^[w.@+-]+Z')],
+        validators=[RegexValidator('^[\w.@+-]+\Z')],
         max_length=LC['name'],
         unique=True
     )
@@ -36,6 +37,9 @@ class User(AbstractUser):
         related_name='followers', symmetrical=False
     )
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name',]
+
     class Meta:
         verbose_name = 'пользователя'
         verbose_name_plural = 'пользователей сайта'
@@ -58,9 +62,15 @@ class UserSubscription(Model):
         verbose_name='следит за')
     created = DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f'{self.follower} - {self.follow_to}'
-
     class Meta:
         verbose_name = 'подписка'
         verbose_name_plural = 'подписки'
+        constraints = [
+            UniqueConstraint(
+                fields=['follower', 'follow_to'],
+                name='unique_subscribtion'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.follower} - {self.follow_to}'

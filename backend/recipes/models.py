@@ -25,18 +25,20 @@ class Recipe(Model):
         verbose_name='Ингредиенты',
     )
     tags = ManyToManyField(
-        'Tag', related_name='recipes',
+        'Tag',
+        related_name='recipes',
         verbose_name='Тег'
     )
     cooking_time = PositiveSmallIntegerField(
         'Время приготовления',
-        validators=[MinValueValidator(
-            limit_value=LC['min_value'],
-            message='Нельзы указать меньше 1')])
+        validators=[
+            MinValueValidator(
+                limit_value=LC['min_value'],
+                message='Нельзы указать меньше 1'
+            )
+        ]
+    )
     published = DateTimeField('Дата публикации', auto_now_add=True)
-
-    def __str__(self):
-        return f'Рецепт {self.name}'
 
     class Meta:
         ordering = ('-published',)
@@ -46,53 +48,52 @@ class Recipe(Model):
         verbose_name = 'рецепт'
         verbose_name_plural = 'рецепты'
 
+    def __str__(self):
+        return f'Рецепт {self.name}'
 
-class FavoriteRecipes(Model):
+
+class AbstractUserAuthorModel(Model):
+    """
+    Абстрактная модель.
+    Добавляет связи объектов пользователя и рецепта
+    с связными моделями.
+    """
     user = ForeignKey(
         User,
         on_delete=CASCADE,
-        related_name='favorite_recipes',
         verbose_name='пользователь'
     )
     recipe = ForeignKey(
         Recipe,
         on_delete=CASCADE,
-        related_name='favorite_recipes',
         verbose_name='Рецепт блюда'
     )
+
+    class Meta:
+        abstract = True
+
+
+class FavoriteRecipes(AbstractUserAuthorModel):
+    class Meta:
+        default_related_name = 'favorite_recipes'
+        verbose_name = 'любимый рецепт'
+        verbose_name_plural = 'любимые рецепты'
 
     def __str__(self):
         return f'{self.user} добавил в избранное {self.recipe}'
 
+
+class ShoppingCart(AbstractUserAuthorModel):
     class Meta:
-        verbose_name = 'любимый рецепт'
-        verbose_name_plural = 'любимые рецепты'
-
-
-class ShoppingCart(Model):
-
-    user = ForeignKey(
-        User,
-        on_delete=CASCADE,
-        related_name='shopping_carts',
-        verbose_name='пользователь'
-    )
-    recipe = ForeignKey(
-        Recipe,
-        on_delete=CASCADE,
-        related_name='shopping_carts',
-        verbose_name='Рецепт блюда'
-    )
+        default_related_name = 'shopping_carts'
+        verbose_name = 'в покупки'
+        verbose_name_plural = 'списка покупок'
 
     def __str__(self):
         return f'''
             {self.user.username} добавил в
             список покупок рецепт {self.recipe.name}
         '''
-
-    class Meta:
-        verbose_name = 'в покупки'
-        verbose_name_plural = 'списка покупок'
 
 
 class Ingredient(Model):
@@ -102,9 +103,6 @@ class Ingredient(Model):
         max_length=LC['ing_unit']
     )
 
-    def __str__(self):
-        return f'{self.name} в {self.measurement_unit}'
-
     class Meta:
         ordering = ('id',)
         indexes = [
@@ -112,6 +110,9 @@ class Ingredient(Model):
         ]
         verbose_name = 'ингридиенты'
         verbose_name_plural = 'ингридиенты'
+
+    def __str__(self):
+        return f'{self.name} в {self.measurement_unit}'
 
 
 class IngredientQuantity(Model):
@@ -132,12 +133,12 @@ class IngredientQuantity(Model):
             message='Нельзы указать меньше 1')]
     )
 
-    def __str__(self):
-        return f'{self.amount} {self.ingredient.name}'
-
     class Meta:
         verbose_name = 'кол-во ингридиента'
         verbose_name_plural = 'кол-во ингридиентов'
+
+    def __str__(self):
+        return f'{self.amount} {self.ingredient.name}'
 
 
 class Tag(Model):
@@ -145,9 +146,9 @@ class Tag(Model):
     color = CharField('Цветовой код', unique=True, max_length=LC['color_len'])
     slug = SlugField('Слаг', unique=True, max_length=LC['slug_len'])
 
-    def __str__(self):
-        return f'{self.name}'
-
     class Meta:
         verbose_name = 'тэг'
         verbose_name_plural = 'тэги'
+
+    def __str__(self):
+        return f'{self.name}'
