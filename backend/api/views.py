@@ -1,7 +1,6 @@
 from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.conf import settings
-from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -18,7 +17,7 @@ from api.filters import IngredientFilter, RecipeFilter
 from api.paginators import StandardPagination, SubPagination
 from api.permissions import IsAuthenticatedOrAdminOrAuthor
 from api.serializers import (IngredientListSerializer,
-                             LimitFieldsRecipeSerializer, NewUserSerializer,
+                             LimitFieldsRecipeSerializer,
                              RecipeCreateChangeDeleteSerializer,
                              RecipeSerializer, TagSerializer, UserSerializer,
                              UserSubscribeSerializer)
@@ -39,16 +38,6 @@ class UserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = StandardPagination
-
-    def get_serializer_class(self):
-        """
-        Функция - определитель сериализатора в зависимости от типа запроса.
-        """
-        if self.action == "set_password":
-            return SetPasswordSerializer
-        if self.request.method == "POST":
-            return NewUserSerializer
-        return UserSerializer
 
     def get_permissions(self):
         """
@@ -202,14 +191,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeSerializer
         return RecipeCreateChangeDeleteSerializer
 
-    def get_recipe(self, request, pk):
+    def get_recipe(self, request, pk=None):
         """ Вспомогательная функция для получения объекта рецепта. """
         try:
             recipe = Recipe.objects.get(id=pk)
         except Exception:
             return None
-        else:
-            return recipe
+        return recipe
+
+    def check_recipe_exists(self, recipe):
+        """
+        Вспомогательная функция обработки ошибок отсутствия рецепта в БД.
+        """
+        if recipe is None:
+            if self.request.method == 'POST':
+                return Response(
+                    {'error': 'Такого рецепта нет или он был удален'},
+                    status=HTTP_400_BAD_REQUEST
+                )
+            if self.request.method == 'DELETE':
+                return Response(
+                    {'error': 'Такого рецепта нет или он был удален'},
+                    status=HTTP_404_NOT_FOUND
+                )
 
     @action(
         methods=['post', 'delete'],
@@ -220,12 +224,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """ Функция для добавления рецептов в список "Избранное"."""
         cur_user = get_user(request)
         recipe = self.get_recipe(request, pk)
+        response = self.check_recipe_exists(recipe)
+        if response:
+            return response
         if self.request.method == 'POST':
-            if not recipe:
-                return Response(
-                    {'error': 'Такого рецепта нет или он был удален'},
-                    status=HTTP_400_BAD_REQUEST
-                )
             favorite_recipe = FavoriteRecipes.objects.filter(
                 user=cur_user, recipe=recipe
             )
@@ -242,11 +244,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status=HTTP_400_BAD_REQUEST
             )
         if self.request.method == 'DELETE':
-            if not recipe:
-                return Response(
-                    {'error': 'Такого рецепта нет или он был удален'},
-                    status=HTTP_404_NOT_FOUND
-                )
             try:
                 favorite_recipe = FavoriteRecipes.objects.get(
                     user=cur_user,
@@ -270,12 +267,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """ Функция для добавления рецептов в список покупок."""
         cur_user = get_user(request)
         recipe = self.get_recipe(request, pk)
+        response = self.check_recipe_exists(recipe)
+        if response:
+            return response
         if self.request.method == 'POST':
-            if not recipe:
-                return Response(
-                    {'error': 'Такого рецепта нет или он был удален'},
-                    status=HTTP_400_BAD_REQUEST
-                )
             recipe_to_add_to_cart = ShoppingCart.objects.filter(
                 user=cur_user, recipe=recipe
             )
@@ -292,11 +287,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status=HTTP_400_BAD_REQUEST
             )
         if self.request.method == 'DELETE':
-            if not recipe:
-                return Response(
-                    {'error': 'Такого рецепта нет или он был удален'},
-                    status=HTTP_404_NOT_FOUND
-                )
             try:
                 recipe_to_add_to_cart = ShoppingCart.objects.get(
                     user=cur_user, recipe=recipe
@@ -324,11 +314,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         варианте пропускается.
         Получается пример "Авокадо - по вкусу".
         """
-        from api.utils import (generate_list_of_cart_ingredients,
-                               generate_txt_file)
+        from api.utils import (generate_txt_file_with_ingredients,
+                               )
 
-        cart_ingredients = generate_list_of_cart_ingredients(request)
-        generate_txt_file(cart_ingredients, request)
+        generate_txt_file_with_ingredients(request)
         file_path = 'media/shopping_list.txt'
         response = FileResponse(
             open(file_path, 'rb'), content_type='text/plain'

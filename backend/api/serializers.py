@@ -1,5 +1,5 @@
-from djoser.serializers import UserCreateSerializer
-from drf_extra_fields.fields import Base64FileField
+from djoser.serializers import UserSerializer as DjoserUserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from recipes.models import Ingredient, IngredientQuantity, Recipe, Tag
 from rest_framework.serializers import (ModelSerializer,
                                         PrimaryKeyRelatedField, ReadOnlyField,
@@ -11,8 +11,8 @@ from users.models import User
 #  ===========================================================================
 
 
-class UserSerializer(ModelSerializer):
-    """ Класс-сериализатор для модели User.(GET-запросы). """
+class UserSerializer(DjoserUserSerializer):
+    """ Класс-сериализатор для модели User. """
     is_subscribed = SerializerMethodField()
 
     class Meta:
@@ -27,19 +27,6 @@ class UserSerializer(ModelSerializer):
         if user.is_anonymous:
             return False
         return user in obj.followers.all()
-
-
-class NewUserSerializer(UserCreateSerializer):
-    """
-    Класс-сериализатор для модели User.(POST-запросы)
-    на базе djoser сериализатора.
-    """
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name',
-            'last_name', 'password',
-        )
 
 
 class UserSubscribeSerializer(ModelSerializer):
@@ -166,7 +153,7 @@ class LimitFieldsRecipeSerializer(ModelSerializer):
 
 class RecipeSerializer(ModelSerializer, IsFavoritedAndInShoppingCartMixin):
     """Класс-сериализатор для модели Recipe."""
-    image = Base64FileField()
+    image = Base64ImageField()
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer()
     ingredients = IngredientRecipeSerializer(
@@ -194,7 +181,7 @@ class RecipeCreateChangeDeleteSerializer(
     Логика валидации полей.
     Логика создания и обновления рецептов.
     """
-    image = Base64FileField(required=True)
+    image = Base64ImageField(required=True)
     ingredients = LimitIngridientCreateSerializer(
         many=True,
         source='recipe')
