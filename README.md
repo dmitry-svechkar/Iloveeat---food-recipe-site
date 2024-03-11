@@ -60,6 +60,11 @@ cd infra
 ```
 docker compose up -d
 ```
+выполнить команды по миграции и сбору статики из контейнера backend
+```
+python3 manage.py migrate
+python3 manage.py collectstatic
+```
 Один раз скопировать статику при разворачивании проекта:
 ```
 cp -r /app/static/. /backend_static/
