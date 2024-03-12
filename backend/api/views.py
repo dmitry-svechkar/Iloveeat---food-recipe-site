@@ -314,8 +314,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         варианте пропускается.
         Получается пример "Авокадо - по вкусу".
         """
-        from api.utils import (generate_txt_file_with_ingredients,
-                               )
+        from api.utils import generate_txt_file_with_ingredients
 
         generate_txt_file_with_ingredients(request)
         file_path = 'media/shopping_list.txt'
