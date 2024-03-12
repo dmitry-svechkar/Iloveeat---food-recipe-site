@@ -16,10 +16,14 @@ def generate_txt_file_with_ingredients(request):
     cur_user = get_user(request)
     ingredients = IngredientQuantity.objects.filter(
         recipe__shopping_carts__user=cur_user
-    ).values('ingredient__name').annotate(
+    ).values(
+        'ingredient__name'
+    ).annotate(
         sum=Sum('amount')
     ).values_list(
-        'ingredient__name', 'sum', 'ingredient__measurement_unit'
+        'ingredient__name',
+        'sum',
+        'ingredient__measurement_unit'
     ).order_by('ingredient__name')
 
     full_path = 'media/shopping_list.txt'
