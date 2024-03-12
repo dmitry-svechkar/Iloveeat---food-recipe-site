@@ -31,13 +31,6 @@ def generate_txt_file_with_ingredients(request):
     Привет!
     Ниже список продуктов, которые нужно купить для готовки вкусных блюд!\n\n
     '''
-    for ingredient in ingredients:
-        name = ingredient[0]
-        amount = ingredient[1]
-        measurement_unit = ingredient[2]
-        if measurement_unit == 'по вкусу':
-            amount == ' '
-
     with open(full_path, 'w+', encoding='utf-8') as file:
         file.write(hello_message)
         for ingredient in ingredients:
