@@ -9,7 +9,7 @@ from recipes.constants import LEN_CONSTANTS as LC
 class User(AbstractUser):
     username = CharField(
         'Ник-нейм',
-        validators=[RegexValidator('^[\w.@+-]+\Z')],
+        validators=[RegexValidator('^[\\w.@+-]+\\Z')],
         max_length=LC['name'],
         unique=True
     )
@@ -38,7 +38,7 @@ class User(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name',]
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', ]
 
     class Meta:
         verbose_name = 'пользователя'
