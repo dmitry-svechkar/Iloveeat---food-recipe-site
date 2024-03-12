@@ -5,9 +5,9 @@
 ```
 https://recipesite-foodgram.zapto.org/admin
 ```
-Ник-Нейм
+Электронная почта:
 ```
-reviewer
+reviewer@any-mail.ru
 ```
 Пароль:
 ```
