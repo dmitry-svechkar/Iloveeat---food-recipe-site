@@ -3,6 +3,7 @@ from django.contrib.auth.models import Group
 from django.urls import include, path
 from rest_framework.authtoken.models import TokenProxy
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
