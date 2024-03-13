@@ -7,13 +7,15 @@ class GetCreateIsExistsObject:
     Миксин для action функций Subscrive, favorite, shopping_cart.
     """
     def get_user(self, request):
-        """ Вспомогательная функция, получающая пользователя запроса. """
+        """
+        Вспомогательная функция, получающая пользователя запроса.
+        """
         user = request.user
         return user
 
     def get_obj(self, model, **kwargs):
         """
-        Вспомогательная функцмя, получающая объект запроса
+        Вспомогательная функция, получающая объект запроса
         или возвращается None.
         """
         try:
@@ -33,7 +35,6 @@ class GetCreateIsExistsObject:
         """
         Вспомогательная функция обработки ошибок отсутствия в БД.
         """
-
         if object is None:
             if self.request.method == 'POST':
                 return Response(
