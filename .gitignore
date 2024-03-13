@@ -119,7 +119,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
-/migrations
+# /migrations
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -130,4 +130,4 @@ dmypy.json
 
 # .idea
 .idea
-/media
+backend/api/media/
