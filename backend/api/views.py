@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT,
-                                   HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
+                                   HTTP_400_BAD_REQUEST)
 
 from recipes.models import (FavoriteRecipes, Ingredient, Recipe, ShoppingCart,
                             Tag)
@@ -21,15 +21,14 @@ from api.serializers import (IngredientListSerializer,
                              RecipeCreateChangeDeleteSerializer,
                              RecipeSerializer, TagSerializer, UserSerializer,
                              UserSubscribeSerializer)
-from api.utils import get_user
-
+from api.mixins import GetCreateIsExistsObject
 
 #  ===========================================================================
 #                           Часть пользователя
 #  ===========================================================================
 
 
-class UserViewSet(UserViewSet):
+class UserViewSet(GetCreateIsExistsObject, UserViewSet):
     """
     Класс-представление для работы моделью Recipe.
     Определены несколько @action функций с
@@ -65,7 +64,7 @@ class UserViewSet(UserViewSet):
     )
     def subscriptions(self, request):
         """ Функция для получения списка отслеживаемых авторов."""
-        user = get_user(request)
+        user = self.get_user(request)
         user_subscriptions = UserSubscription.objects.filter(follower=user)
         follow_to_users = [
             subscription.follow_to for subscription in user_subscriptions
@@ -88,54 +87,43 @@ class UserViewSet(UserViewSet):
     )
     def subscribe(self, request, id=None):
         """ Функция для добавления пользователей  в список отслеживаемых."""
-        cur_user = get_user(request)
+        follow_to = self.get_obj(User, id=id)
+        is_follow_to_exists = self.check_exists(follow_to)
+        if is_follow_to_exists:
+            return is_follow_to_exists
         if self.request.method == 'POST':
-            try:
-                follow_to_user = User.objects.get(id=id)
-            except Exception:
+            if self.get_user(request) == follow_to:
                 return Response(
-                    {'error': 'Такого пользователя не существует.'},
-                    status=HTTP_404_NOT_FOUND
+                    status=HTTP_400_BAD_REQUEST
                 )
-            if cur_user == follow_to_user or UserSubscription.objects.filter(
-                follower=cur_user, follow_to=follow_to_user
-            ).exists():
+            instance, created = self.get_or_create_object(
+                UserSubscription,
+                follower=self.get_user(request),
+                follow_to=follow_to
+            )
+            if not created:
                 return Response(
-                    {
-                        'error':
-                            'Вы не можете подписаться на этого пользователя.'
-                    },
+                    {'error': 'Пользователь уже в подписках.'},
+                    status=HTTP_400_BAD_REQUEST
+                )
+            serializer = UserSubscribeSerializer(follow_to)
+            return Response(
+                serializer.data, status=HTTP_201_CREATED
+            )
+        if self.request.method == 'DELETE':
+            instance = self.get_obj(
+                UserSubscription,
+                follower=self.get_user(request),
+                follow_to=follow_to
+            )
+            if not instance:
+                return Response(
+                    {'error': 'Вы не подписаны на этого пользователя'},
                     status=HTTP_400_BAD_REQUEST
                 )
             else:
-                UserSubscription.objects.create(
-                    follower=request.user,
-                    follow_to=follow_to_user
-                )
-                serializer = UserSubscribeSerializer(follow_to_user)
-                return Response(
-                    serializer.data, status=HTTP_201_CREATED
-                )
-        if self.request.method == 'DELETE':
-            try:
-                follow_to_user = User.objects.get(id=id)
-            except Exception:
-                return Response(
-                    {'error': 'Такой пользователя не существует.'},
-                    status=HTTP_404_NOT_FOUND)
-            else:
-                try:
-                    subscribtion = UserSubscription.objects.get(
-                        follower=cur_user.id,
-                        follow_to=follow_to_user.id
-                    )
-                except Exception:
-                    return Response(
-                        {'error': 'Такой подписки не существует.'},
-                        status=HTTP_400_BAD_REQUEST)
-                else:
-                    subscribtion.delete()
-                    return Response(status=HTTP_204_NO_CONTENT)
+                instance.delete()
+                return Response(status=HTTP_204_NO_CONTENT)
 
 
 #  ===========================================================================
@@ -160,7 +148,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', ]
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(GetCreateIsExistsObject, viewsets.ModelViewSet):
     """
     Класс-представление для работы моделью Recipe.
     Определены несколько @action функций с
@@ -199,63 +187,45 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return None
         return recipe
 
-    def check_recipe_exists(self, recipe):
-        """
-        Вспомогательная функция обработки ошибок отсутствия рецепта в БД.
-        """
-        if recipe is None:
-            if self.request.method == 'POST':
-                return Response(
-                    {'error': 'Такого рецепта нет или он был удален'},
-                    status=HTTP_400_BAD_REQUEST
-                )
-            if self.request.method == 'DELETE':
-                return Response(
-                    {'error': 'Такого рецепта нет или он был удален'},
-                    status=HTTP_404_NOT_FOUND
-                )
-
     @action(
         methods=['post', 'delete'],
         permission_classes=[IsAuthenticated, ],
         detail=True
     )
-    def favorite(self, request, pk=None):
+    def favorite(self, request, pk):
         """ Функция для добавления рецептов в список "Избранное"."""
-        cur_user = get_user(request)
-        recipe = self.get_recipe(request, pk)
-        response = self.check_recipe_exists(recipe)
-        if response:
-            return response
+        recipe = self.get_obj(Recipe, id=pk)
+        is_recipe_exists = self.check_exists(recipe)
+        if is_recipe_exists:
+            return is_recipe_exists
         if self.request.method == 'POST':
-            favorite_recipe = FavoriteRecipes.objects.filter(
-                user=cur_user, recipe=recipe
+            instance, created = self.get_or_create_object(
+                FavoriteRecipes,
+                user=self.get_user(request),
+                recipe=recipe
             )
-            if not favorite_recipe:
-                FavoriteRecipes.objects.create(
-                    user=cur_user, recipe=recipe
-                )
-                serializer = LimitFieldsRecipeSerializer(recipe)
+            if not created:
                 return Response(
-                    serializer.data, status=HTTP_201_CREATED
+                    {'error': 'Этот рецепт уже в избранном.'},
+                    status=HTTP_400_BAD_REQUEST
                 )
+            serializer = LimitFieldsRecipeSerializer(recipe)
             return Response(
-                {'error': 'Этот рецепт уже в избранном.'},
-                status=HTTP_400_BAD_REQUEST
+                serializer.data, status=HTTP_201_CREATED
             )
         if self.request.method == 'DELETE':
-            try:
-                favorite_recipe = FavoriteRecipes.objects.get(
-                    user=cur_user,
-                    recipe=recipe
-                )
-            except Exception:
+            instance = self.get_obj(
+                FavoriteRecipes,
+                user=self.get_user(request),
+                recipe=recipe
+            )
+            if not instance:
                 return Response(
                     {'error': 'Такого рецепта нет в избранном.'},
                     status=HTTP_400_BAD_REQUEST
                 )
             else:
-                favorite_recipe.delete()
+                instance.delete()
                 return Response(status=HTTP_204_NO_CONTENT)
 
     @action(
@@ -265,39 +235,38 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """ Функция для добавления рецептов в список покупок."""
-        cur_user = get_user(request)
-        recipe = self.get_recipe(request, pk)
-        response = self.check_recipe_exists(recipe)
-        if response:
-            return response
+        recipe = self.get_obj(Recipe, id=pk)
+        is_recipe_exists = self.check_exists(recipe)
+        if is_recipe_exists:
+            return is_recipe_exists
         if self.request.method == 'POST':
-            recipe_to_add_to_cart = ShoppingCart.objects.filter(
-                user=cur_user, recipe=recipe
+            instance, created = self.get_or_create_object(
+                ShoppingCart,
+                user=self.get_user(request),
+                recipe=recipe
             )
-            if not recipe_to_add_to_cart:
-                ShoppingCart.objects.create(
-                    user=cur_user, recipe=recipe
-                )
-                serializer = LimitFieldsRecipeSerializer(recipe)
+            if not created:
                 return Response(
-                    serializer.data, status=HTTP_201_CREATED
+                    {'error': 'Этот рецепт уже в в списке покупок.'},
+                    status=HTTP_400_BAD_REQUEST
                 )
+            serializer = LimitFieldsRecipeSerializer(recipe)
             return Response(
-                {'error': 'Этот рецепт уже в в списке покупок.'},
-                status=HTTP_400_BAD_REQUEST
+                serializer.data, status=HTTP_201_CREATED
             )
         if self.request.method == 'DELETE':
-            try:
-                recipe_to_add_to_cart = ShoppingCart.objects.get(
-                    user=cur_user, recipe=recipe
-                )
-            except Exception:
+            instance = self.get_obj(
+                ShoppingCart,
+                user=self.get_user(request),
+                recipe=recipe
+            )
+            if not instance:
                 return Response(
                     {'error': 'Такого рецепта нет в списке покупок'},
                     status=HTTP_400_BAD_REQUEST
                 )
             else:
-                recipe_to_add_to_cart.delete()
+                instance.delete()
                 return Response(status=HTTP_204_NO_CONTENT)
 
     @action(
