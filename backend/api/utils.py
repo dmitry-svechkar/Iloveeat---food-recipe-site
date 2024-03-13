@@ -2,18 +2,11 @@ from django.db.models import Sum
 from recipes.models import IngredientQuantity
 
 
-def get_user(request):
-    """ Вспомогательная функция, получающая пользователя запроса. """
-    user = request.user
-    return user
-
-
 def generate_txt_file_with_ingredients(request):
     """
     Функция получения кверисета ингредиентов и записи файла с данными покупок.
     """
-
-    cur_user = get_user(request)
+    cur_user = request.user
     ingredients = IngredientQuantity.objects.filter(
         recipe__shopping_carts__user=cur_user
     ).values(
