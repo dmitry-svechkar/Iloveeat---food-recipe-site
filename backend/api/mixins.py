@@ -33,6 +33,9 @@ class GetCreateIsExistsObject:
         return instance, created
 
     def remove_object(self, model, **kwargs):
+        """
+        Общий метод для  удаления объекта.
+        """
         instance = self.get_obj(
             model,
             **kwargs
