@@ -26,10 +26,20 @@ class GetCreateIsExistsObject:
 
     def get_or_create_object(self, model, **kwargs):
         """
-        Общий метод для создания объекта по указанной модели.
+        Общий метод для создания объекта по указанной модели
+        или проверки его наличия в БД.
         """
-        object = model.objects.get_or_create(**kwargs)
-        return object
+        instance, created = model.objects.get_or_create(**kwargs)
+        return instance, created
+
+    def remove_object(self, model, **kwargs):
+        instance = self.get_obj(
+            model,
+            **kwargs
+        )
+        if instance:
+            instance.delete()
+            return instance
 
     def check_exists(self, object):
         """

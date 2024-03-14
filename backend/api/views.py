@@ -103,7 +103,6 @@ class UserViewSet(GetCreateIsExistsObject, UserViewSet):
             )
             if not created:
                 return Response(
-                    {'error': 'Пользователь уже в подписках.'},
                     status=HTTP_400_BAD_REQUEST
                 )
             serializer = UserSubscribeSerializer(follow_to)
@@ -111,20 +110,16 @@ class UserViewSet(GetCreateIsExistsObject, UserViewSet):
                 serializer.data, status=HTTP_201_CREATED
             )
         if self.request.method == 'DELETE':
-            instance = self.get_obj(
+            instance = self.remove_object(
                 UserSubscription,
                 follower=self.get_user(request),
                 follow_to=follow_to
             )
-            if not instance:
-                return Response(
-                    {'error': 'Вы не подписаны на этого пользователя'},
-                    status=HTTP_400_BAD_REQUEST
-                )
-            else:
-                instance.delete()
+            if instance:
                 return Response(status=HTTP_204_NO_CONTENT)
-
+            return Response(
+                status=HTTP_400_BAD_REQUEST
+            )
 
 #  ===========================================================================
 #                           Часть рецепты
@@ -214,19 +209,16 @@ class RecipeViewSet(GetCreateIsExistsObject, viewsets.ModelViewSet):
                 serializer.data, status=HTTP_201_CREATED
             )
         if self.request.method == 'DELETE':
-            instance = self.get_obj(
+            instance = self.remove_object(
                 FavoriteRecipes,
                 user=self.get_user(request),
                 recipe=recipe
             )
-            if not instance:
-                return Response(
-                    {'error': 'Такого рецепта нет в избранном.'},
-                    status=HTTP_400_BAD_REQUEST
-                )
-            else:
-                instance.delete()
+            if instance:
                 return Response(status=HTTP_204_NO_CONTENT)
+            return Response(
+                status=HTTP_400_BAD_REQUEST
+            )
 
     @action(
         methods=['post', 'delete'],
@@ -247,7 +239,7 @@ class RecipeViewSet(GetCreateIsExistsObject, viewsets.ModelViewSet):
             )
             if not created:
                 return Response(
-                    {'error': 'Этот рецепт уже в в списке покупок.'},
+                    {'error': 'Этот рецепт уже в списке покупок.'},
                     status=HTTP_400_BAD_REQUEST
                 )
             serializer = LimitFieldsRecipeSerializer(recipe)
@@ -255,19 +247,16 @@ class RecipeViewSet(GetCreateIsExistsObject, viewsets.ModelViewSet):
                 serializer.data, status=HTTP_201_CREATED
             )
         if self.request.method == 'DELETE':
-            instance = self.get_obj(
+            instance = self.remove_object(
                 ShoppingCart,
                 user=self.get_user(request),
                 recipe=recipe
             )
-            if not instance:
-                return Response(
-                    {'error': 'Такого рецепта нет в списке покупок'},
-                    status=HTTP_400_BAD_REQUEST
-                )
-            else:
-                instance.delete()
+            if instance:
                 return Response(status=HTTP_204_NO_CONTENT)
+            return Response(
+                status=HTTP_400_BAD_REQUEST
+            )
 
     @action(
         methods=['get'],
