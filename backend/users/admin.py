@@ -33,9 +33,9 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(UserSubscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    fields = ('follower', 'follow_to')
-    list_display = ('follower', 'total_subscribers', 'total_subscriptions',)
-    search_fields = ('follower',)
+    fields = ('user', 'follow_to')
+    list_display = ('user', 'total_subscribers', 'total_subscriptions',)
+    search_fields = ('user',)
 
     def has_delete_permission(self, request, obj=None):
         return True
@@ -49,7 +49,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
         ).distinct('follower').order_by('follower')
 
     def total_subscribers(self, obj):
-        return obj.follower.follow_to.count()
+        return obj.user.follow_to.count()
     total_subscribers.short_description = 'Количество подписчиков'
 
     def total_subscriptions(self, obj):

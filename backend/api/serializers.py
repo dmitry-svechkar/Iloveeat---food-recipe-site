@@ -1,7 +1,7 @@
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import Ingredient, IngredientQuantity, Recipe, Tag
-from rest_framework.serializers import (ModelSerializer,
+from rest_framework.serializers import (CharField, ModelSerializer,
                                         PrimaryKeyRelatedField, ReadOnlyField,
                                         SerializerMethodField, ValidationError)
 from users.models import User
@@ -146,6 +146,8 @@ class LimitFieldsRecipeSerializer(ModelSerializer):
     """
     Класс-сериализатор ограничения полей для модели Recipe.
     """
+    image = CharField()
+
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time',)

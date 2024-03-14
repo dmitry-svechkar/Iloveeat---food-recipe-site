@@ -48,7 +48,7 @@ class User(AbstractUser):
 class UserSubscription(Model):
     """Модель подписок."""
 
-    follower = ForeignKey(
+    user = ForeignKey(
         User, on_delete=CASCADE,
         null=True,
         blank=False,
@@ -67,10 +67,10 @@ class UserSubscription(Model):
         verbose_name_plural = 'подписки'
         constraints = [
             UniqueConstraint(
-                fields=['follower', 'follow_to'],
+                fields=['user', 'follow_to'],
                 name='unique_subscribtion'
             )
         ]
 
     def __str__(self):
-        return f'{self.follower} - {self.follow_to}'
+        return f'{self.user} - {self.follow_to}'
