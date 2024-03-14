@@ -2,18 +2,15 @@ from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.conf import settings
 from djoser.views import UserViewSet
+from recipes.models import (FavoriteRecipes, Ingredient, Recipe, ShoppingCart,
+                            Tag)
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT,
-                                   HTTP_400_BAD_REQUEST)
-
-from recipes.models import (FavoriteRecipes, Ingredient, Recipe, ShoppingCart,
-                            Tag)
 from users.models import User, UserSubscription
 
 from api.filters import IngredientFilter, RecipeFilter
+from api.mixins import GetCreateIsExistsObject
 from api.paginators import StandardPagination, SubPagination
 from api.permissions import IsAuthenticatedOrAdminOrAuthor
 from api.serializers import (IngredientListSerializer,
@@ -21,7 +18,6 @@ from api.serializers import (IngredientListSerializer,
                              RecipeCreateChangeDeleteSerializer,
                              RecipeSerializer, TagSerializer, UserSerializer,
                              UserSubscribeSerializer)
-from api.mixins import GetCreateIsExistsObject
 
 #  ===========================================================================
 #                           Часть пользователя
@@ -65,7 +61,7 @@ class UserViewSet(GetCreateIsExistsObject, UserViewSet):
     def subscriptions(self, request):
         """ Функция для получения списка отслеживаемых авторов."""
         user = self.get_user(request)
-        user_subscriptions = UserSubscription.objects.filter(follower=user)
+        user_subscriptions = UserSubscription.objects.filter(user=user)
         follow_to_users = [
             subscription.follow_to for subscription in user_subscriptions
         ]
@@ -81,45 +77,30 @@ class UserViewSet(GetCreateIsExistsObject, UserViewSet):
         return self.paginator.get_paginated_response(paginated_data)
 
     @action(
-        methods=['post', 'delete'],
+        methods=['post'],
         detail=True,
         permission_classes=[IsAuthenticated, ]
     )
-    def subscribe(self, request, id=None):
-        """ Функция для добавления пользователей  в список отслеживаемых."""
-        follow_to = self.get_obj(User, id=id)
-        is_follow_to_exists = self.check_exists(follow_to)
-        if is_follow_to_exists:
-            return is_follow_to_exists
-        if self.request.method == 'POST':
-            if self.get_user(request) == follow_to:
-                return Response(
-                    status=HTTP_400_BAD_REQUEST
-                )
-            instance, created = self.get_or_create_object(
-                UserSubscription,
-                follower=self.get_user(request),
-                follow_to=follow_to
-            )
-            if not created:
-                return Response(
-                    status=HTTP_400_BAD_REQUEST
-                )
-            serializer = UserSubscribeSerializer(follow_to)
-            return Response(
-                serializer.data, status=HTTP_201_CREATED
-            )
-        if self.request.method == 'DELETE':
-            instance = self.remove_object(
-                UserSubscription,
-                follower=self.get_user(request),
-                follow_to=follow_to
-            )
-            if instance:
-                return Response(status=HTTP_204_NO_CONTENT)
-            return Response(
-                status=HTTP_400_BAD_REQUEST
-            )
+    def subscribe(self, request, id):
+        """ Функция для добавления пользователей  в список подписок."""
+        return self.create_object(
+            request=request, pk=id,
+            serializers=UserSubscribeSerializer,
+            model=UserSubscription,
+            obj_model=User,
+            arg='follow_to'
+        )
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id):
+        """ Функция для удаления пользователей  из списка подписок."""
+        return self.delete_object(
+            request=request,
+            pk=id,
+            model=UserSubscription,
+            obj_model=User,
+            arg='follow_to'
+        )
 
 #  ===========================================================================
 #                           Часть рецепты
@@ -174,89 +155,59 @@ class RecipeViewSet(GetCreateIsExistsObject, viewsets.ModelViewSet):
             return RecipeSerializer
         return RecipeCreateChangeDeleteSerializer
 
-    def get_recipe(self, request, pk=None):
-        """ Вспомогательная функция для получения объекта рецепта. """
-        try:
-            recipe = Recipe.objects.get(id=pk)
-        except Exception:
-            return None
-        return recipe
-
     @action(
-        methods=['post', 'delete'],
+        methods=['post'],
         permission_classes=[IsAuthenticated, ],
         detail=True
     )
     def favorite(self, request, pk):
-        """ Функция для добавления рецептов в список "Избранное"."""
-        recipe = self.get_obj(Recipe, id=pk)
-        is_recipe_exists = self.check_exists(recipe)
-        if is_recipe_exists:
-            return is_recipe_exists
-        if self.request.method == 'POST':
-            instance, created = self.get_or_create_object(
-                FavoriteRecipes,
-                user=self.get_user(request),
-                recipe=recipe
-            )
-            if not created:
-                return Response(
-                    {'error': 'Этот рецепт уже в избранном.'},
-                    status=HTTP_400_BAD_REQUEST
-                )
-            serializer = LimitFieldsRecipeSerializer(recipe)
-            return Response(
-                serializer.data, status=HTTP_201_CREATED
-            )
-        if self.request.method == 'DELETE':
-            instance = self.remove_object(
-                FavoriteRecipes,
-                user=self.get_user(request),
-                recipe=recipe
-            )
-            if instance:
-                return Response(status=HTTP_204_NO_CONTENT)
-            return Response(
-                status=HTTP_400_BAD_REQUEST
-            )
+        """ Функция для добавления рецептов в список 'Избранное'."""
+        return self.create_object(
+            request=request,
+            pk=pk,
+            serializers=LimitFieldsRecipeSerializer,
+            model=FavoriteRecipes,
+            obj_model=Recipe,
+            arg='recipe'
+        )
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        """ Функция для удаления рецептов из списка 'Избранное'."""
+        return self.delete_object(
+            request=request,
+            pk=pk,
+            model=FavoriteRecipes,
+            obj_model=Recipe,
+            arg='recipe'
+        )
 
     @action(
-        methods=['post', 'delete'],
+        methods=['post'],
         permission_classes=[IsAuthenticated, ],
         detail=True
     )
-    def shopping_cart(self, request, pk=None):
+    def shopping_cart(self, request, pk):
         """ Функция для добавления рецептов в список покупок."""
-        recipe = self.get_obj(Recipe, id=pk)
-        is_recipe_exists = self.check_exists(recipe)
-        if is_recipe_exists:
-            return is_recipe_exists
-        if self.request.method == 'POST':
-            instance, created = self.get_or_create_object(
-                ShoppingCart,
-                user=self.get_user(request),
-                recipe=recipe
-            )
-            if not created:
-                return Response(
-                    {'error': 'Этот рецепт уже в списке покупок.'},
-                    status=HTTP_400_BAD_REQUEST
-                )
-            serializer = LimitFieldsRecipeSerializer(recipe)
-            return Response(
-                serializer.data, status=HTTP_201_CREATED
-            )
-        if self.request.method == 'DELETE':
-            instance = self.remove_object(
-                ShoppingCart,
-                user=self.get_user(request),
-                recipe=recipe
-            )
-            if instance:
-                return Response(status=HTTP_204_NO_CONTENT)
-            return Response(
-                status=HTTP_400_BAD_REQUEST
-            )
+        return self.create_object(
+            request=request,
+            pk=pk,
+            serializers=LimitFieldsRecipeSerializer,
+            model=ShoppingCart,
+            obj_model=Recipe,
+            arg='recipe'
+        )
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
+        """ Функция для удаления рецептов из список покупок."""
+        return self.delete_object(
+            request=request,
+            pk=pk,
+            model=ShoppingCart,
+            obj_model=Recipe,
+            arg='recipe'
+        )
 
     @action(
         methods=['get'],

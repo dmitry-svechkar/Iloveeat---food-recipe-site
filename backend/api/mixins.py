@@ -1,5 +1,6 @@
 from rest_framework.response import Response
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT,
+                                   HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
 
 
 class GetCreateIsExistsObject:
@@ -13,47 +14,41 @@ class GetCreateIsExistsObject:
         user = request.user
         return user
 
-    def get_obj(self, model, **kwargs):
+    def create_object(self, request, pk, serializers, model, obj_model, arg):
         """
-        Вспомогательная функция, получающая объект запроса
-        или возвращается None.
+        Общий метод для создания объекта по указанной модели.
         """
         try:
-            object = model.objects.get(**kwargs)
+            obj = obj_model.objects.get(pk=pk)
         except Exception:
-            return None
-        return object
+            return Response(status=HTTP_400_BAD_REQUEST)
+        else:
+            if arg == 'follow_to' and request.user == obj:
+                return Response(status=HTTP_400_BAD_REQUEST)
+            _, created = model.objects.get_or_create(
+                user=request.user, **{arg: obj}
+            )
+            if not created:
+                return Response(status=HTTP_400_BAD_REQUEST)
+            serializer = serializers(obj)
+            return Response(serializer.data, status=HTTP_201_CREATED)
 
-    def get_or_create_object(self, model, **kwargs):
+    def delete_object(self, request, pk, model, obj_model, arg):
         """
-        Общий метод для создания объекта по указанной модели
-        или проверки его наличия в БД.
+        Общий метод для удаления объекта по указанной модели.
         """
-        instance, created = model.objects.get_or_create(**kwargs)
-        return instance, created
-
-    def remove_object(self, model, **kwargs):
-        """
-        Общий метод для  удаления объекта.
-        """
-        instance = self.get_obj(
-            model,
-            **kwargs
-        )
-        if instance:
-            instance.delete()
-            return instance
-
-    def check_exists(self, object):
-        """
-        Вспомогательная функция обработки ошибок отсутствия в БД.
-        """
-        if object is None:
-            if self.request.method == 'POST':
-                return Response(
-                    status=HTTP_400_BAD_REQUEST
+        try:
+            obj = obj_model.objects.get(pk=pk)
+        except Exception:
+            return Response(status=HTTP_404_NOT_FOUND)
+        else:
+            try:
+                instance = model.objects.get(
+                    user=request.user,
+                    **{arg: obj}
                 )
-            if self.request.method == 'DELETE':
-                return Response(
-                    status=HTTP_404_NOT_FOUND
-                )
+            except Exception:
+                return Response(status=HTTP_400_BAD_REQUEST)
+            else:
+                instance.delete()
+                return Response(status=HTTP_204_NO_CONTENT)
