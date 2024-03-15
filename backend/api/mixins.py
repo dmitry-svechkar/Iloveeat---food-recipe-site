@@ -22,16 +22,17 @@ class GetCreateIsExistsObject:
             obj = obj_model.objects.get(pk=pk)
         except Exception:
             return Response(status=HTTP_400_BAD_REQUEST)
-        else:
-            if arg == 'follow_to' and request.user == obj:
-                return Response(status=HTTP_400_BAD_REQUEST)
-            _, created = model.objects.get_or_create(
-                user=request.user, **{arg: obj}
-            )
-            if not created:
-                return Response(status=HTTP_400_BAD_REQUEST)
-            serializer = serializers(obj)
-            return Response(serializer.data, status=HTTP_201_CREATED)
+        if arg == 'follow_to' and request.user == obj:
+            return Response(status=HTTP_400_BAD_REQUEST)
+
+        _, created = model.objects.get_or_create(
+            user=request.user,
+            **{arg: obj}
+        )
+        if not created:
+            return Response(status=HTTP_400_BAD_REQUEST)
+        serializer = serializers(obj)
+        return Response(serializer.data, status=HTTP_201_CREATED)
 
     def delete_object(self, request, pk, model, obj_model, arg):
         """
