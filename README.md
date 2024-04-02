@@ -1,29 +1,8 @@
-# Сайт для размещения информации о рецептах разных кухон мира.
-Доступен по адресу https://recipesite-foodgram.zapto.org/recipes
-
-Доступ для админки:
-```
-https://recipesite-foodgram.zapto.org/admin
-```
-Электронная почта:
-```
-reviewer@any-mail.ru
-```
-Пароль:
-```
-Qwerty0527!
-```
+### I LOVE EAT 
+##### Сайт для размещения информации о рецептах разных кухон мира. 
 
 ![image](https://github.com/dmitry-svechkar/foodgram-project-react/assets/138603861/fec36985-98c7-46b1-b508-c44ea5098411)
 
-### Стек технологий
-
-- Python 3.9
-- Django 4.2.10
-- DRF 3.14.0
-- Postgres
-- Docker
-- Nginx
 
 В проекте реализованы:
 - Аутентификация и регистрация пользователей.
@@ -31,17 +10,30 @@ Qwerty0527!
    - Добавления рецептов
    - Функционал добавления подписок на авторов
    - Функционал добавления рецептов в избранное
-   - Выгрузка списка покупок для готовкию
+   - Выгрузка списка покупок для готовки.
+- Подключен front на базе react-приложения
 - Импорт данных в БД.
 - Настроена админка для управления ресурсами сайта.
 
-# Чтобы запустить проект на локальной машине:
-Клонировать репозиторий и перейти в него в командной строке:
+### Стек технологий
+<div>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" width="50" height="50">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-plain.svg" width="50" height="50">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/djangorest/djangorest-line-wordmark.svg" width="50" height="50">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original.svg" width="50" height="50">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original-wordmark.svg" width="50" height="50">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linux/linux-original.svg" width="50" height="50">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nginx/nginx-original.svg" width="50" height="50">
+          
+</div>
+
+##### Чтобы запустить проект на локальной машине:
+###### Клонировать репозиторий и перейти в него в командной строке:
 
 ```
 git clone git@github.com:dmitry-svechkar/foodgram-project-react.git
 ```
-Создать в корневой папке файл .env и заполнить данными своего проекта и БД.
+###### Создать в корневой папке файл .env и заполнить данными своего проекта и БД.
 ```
 POSTGRES_USER=username
 POSTGRES_PASSWORD=yourpassword
@@ -53,27 +45,36 @@ DEBUG=True
 ALLOWED_HOSTS=127.0.0.1
 CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000
 ```
-Перейти в папку infra и оттуда выполнить команду
+###### Перейти в папку infra и оттуда выполнить команду
 ```
 cd infra
 ```
 ```
 docker compose up -d
 ```
-выполнить команды по миграции и сбору статики из контейнера backend
+###### Выполнить команды по миграции и сбору статики из контейнера backend
 ```
 python3 manage.py migrate
 python3 manage.py collectstatic
 ```
-Один раз скопировать статику при разворачивании проекта:
+###### Один раз скопировать статику при разворачивании проекта:
 ```
 cp -r /app/static/. /backend_static/
 ```
-Из контейнера backend выполните команду по созданию суперпользователя
+###### Из контейнера backend выполните команду по созданию суперпользователя
 ```
 python manage.py createsuperuser
 ```
-В проекте заготовлена тестовая база. Чтобы ее загрузить в БД выполните команду:
+###### В проекте заготовлена тестовая база. Чтобы ее загрузить в БД выполните команду:
+
 ```
 python manage.py import_data
 ```
+
+###### API документация доступна по адресу:
+```
+127.0.0.1:8000/api/
+```
+
+######  Приготовить вкусный ужин вечером!
+
